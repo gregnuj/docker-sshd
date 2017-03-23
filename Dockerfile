@@ -12,4 +12,5 @@ RUN set -x \
     && mkdir /var/run/sshd \
     && passwd -d root 
 
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["/usr/sbin/sshd", "-Dep", "22"]

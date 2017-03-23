@@ -1,4 +1,4 @@
-#!/bin/ash
+#!/bin/bash
 for script in $(ls /etc/entrypoint.d/*.sh); do 
     echo "$0: running $script"
     $script
