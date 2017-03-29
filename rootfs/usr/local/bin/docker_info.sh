@@ -5,19 +5,29 @@ if [[ ! -z "$DEBUG" && "$DEBUG" != 0 && "${DEBUG^^}" != "FALSE" ]]; then
   set -x
 fi
 
+declare NAME_SERVER="${NAME_SERVER:=""}"
 declare SERVICE_NAME="${SERVICE_NAME:=""}"
 declare SERVICE_HOSTNAME="${SERVICE_HOSTNAME:=""}"
 declare SERVICE_INSTANCE="${SERVICE_INSTANCE:=""}"
 declare CONTAINER_NAME="${CONTAINER_NAME:=""}"
 declare NODE_ADDRESS="${NODE_ADDRESS:=""}"
 
+function name_server(){
+    if [[ -z "$NAME_SERVER" ]] ; then
+        NAME_SERVER="$(awk '/nameserver/{print $2}' /etc/resolv.conf | tail -n1)"
+    fi
+    echo "$NAME_SERVER"
+}
+
 function service_hostname(){
     while [[ -z "$SERVICE_HOSTNAME" ]] ; do
-        SERVICE_HOSTNAME="$(hostname -i | nslookup | awk -F'= ' 'NR==5 { print $2 }'| awk -F'.' '{print $1 "." $2}')"
+        NODE_ADDRESS="$(node_address)"
+        NAME_SERVER="$(name_server)"
+        SERVICE_HOSTNAME="$(nslookup "$NODE_ADDRESS" "$NAME_SERVER" | awk -F'= ' 'NR==5 { print $2 }'| awk -F'.' '{print $1 "." $2}')"
         if [[ -z "$SERVICE_HOSTNAME" ]] ; then
-	    echo "Waiting for dns..." >&2
-       	    sleep 1;
-	    LOOP=$((LOOP + 1));
+            echo "Waiting for dns..." >&2
+            sleep 1;
+            LOOP=$((LOOP + 1));
         fi
     done
     echo "$SERVICE_HOSTNAME"
