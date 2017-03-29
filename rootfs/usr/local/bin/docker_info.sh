@@ -24,6 +24,9 @@ function service_hostname(){
         NODE_ADDRESS="$(node_address)"
         NAME_SERVER="$(name_server)"
         SERVICE_HOSTNAME="$(nslookup "$NODE_ADDRESS" "$NAME_SERVER" | awk -F'= ' 'NR==5 { print $2 }'| awk -F'.' '{print $1 "." $2}')"
+        if [[ "${SERVICE_HOSTNAME}" == $(hostname) ]]; then
+            SERVICE_HOSTNAME=""
+        fi 
         if [[ -z "$SERVICE_HOSTNAME" ]] ; then
             echo "Waiting for dns..." >&2
             sleep 1;
