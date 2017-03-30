@@ -19,6 +19,18 @@ function name_server(){
     echo "$NAME_SERVER"
 }
 
+function node_address(){
+    while [[ -z "$NODE_ADDRESS" ]] ; do
+        NODE_ADDRESS="$(hostname -i | awk '{print $1}')"
+        if [[ -z "$NODE_ADDRESS" ]] ; then
+	    echo "Waiting for dns..." >&2
+       	    sleep 1;
+	    LOOP=$((LOOP + 1));
+        fi
+    done
+    echo "$NODE_ADDRESS"
+}
+
 function service_hostname(){
     while [[ -z "$SERVICE_HOSTNAME" ]] ; do
         NODE_ADDRESS="$(node_address)"
@@ -58,18 +70,6 @@ function container_name(){
         CONTAINER_NAME="${SERVICE_NAME##*_}"
     fi
     echo "$CONTAINER_NAME"
-}
-
-function node_address(){
-    while [[ -z "$NODE_ADDRESS" ]] ; do
-        NODE_ADDRESS="$(hostname -i)"
-        if [[ -z "$NODE_ADDRESS" ]] ; then
-	    echo "Waiting for dns..." >&2
-       	    sleep 1;
-	    LOOP=$((LOOP + 1));
-        fi
-    done
-    echo "$NODE_ADDRESS"
 }
 
 function main(){
