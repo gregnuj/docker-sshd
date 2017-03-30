@@ -5,6 +5,7 @@ if [[ ! -z "$DEBUG" && "$DEBUG" != 0 && "${DEBUG^^}" != "FALSE" ]]; then
   set -x
 fi
 
+declare FQDN="${FQDN:=""}"
 declare NAME_SERVER="${NAME_SERVER:=""}"
 declare SERVICE_NAME="${SERVICE_NAME:=""}"
 declare SERVICE_HOSTNAME="${SERVICE_HOSTNAME:=""}"
@@ -31,35 +32,34 @@ function node_address(){
     echo "$NODE_ADDRESS"
 }
 
-function service_hostname(){
-    while [[ -z "$SERVICE_HOSTNAME" ]] ; do
-        NODE_ADDRESS="$(node_address)"
-        NAME_SERVER="$(name_server)"
-        SERVICE_HOSTNAME="$(nslookup "$NODE_ADDRESS" "$NAME_SERVER" | awk -F'= ' 'NR==5 { print $2 }'| awk -F'.' '{print $1 "." $2}')"
-        if [[ "${SERVICE_HOSTNAME}" == $(hostname) ]]; then
-            SERVICE_HOSTNAME=""
-        fi 
-        if [[ -z "$SERVICE_HOSTNAME" ]] ; then
-            echo "Waiting for dns..." >&2
-            sleep 1;
-            LOOP=$((LOOP + 1));
+function fqdn(){
+    while [[ -z "$FQDN" ]] ; do
+        FQDN="$(nslookup "$(node_address)" "$(name_server)" | awk -F'= ' 'NR==5 { print $2 }'| tr '.' ' ')"
+        LEN=$(echo "$FQDN" | wc -w)
+        if [[ $LEN -ne 4 ]]; then
+            FQDN=""
         fi
     done
+    echo "$FQDN"
+}
+
+function service_hostname(){
+    if [[ -z "$SERVICE_HOSTNAME" ]] ; then
+        SERVICE_HOSTNAME="$(echo "$(fqdn)" | awk -F'.' '{print $1 "." $2}')"
+    fi
     echo "$SERVICE_HOSTNAME"
 }
 
 function service_name(){
     if [[ -z $SERVICE_NAME ]] ; then
-        SERVICE_HOSTNAME="$(service_hostname)"
-        SERVICE_NAME="${SERVICE_HOSTNAME%%.*}"
+        SERVICE_NAME="$(echo "$(fqdn)" | awk -F'.' '{print $1}')"
     fi
     echo "$SERVICE_NAME"
 }
 
 function service_instance(){
     if [[ -z $SERVICE_INSTANCE ]] ; then
-        SERVICE_HOSTNAME="$(service_hostname)"
-        SERVICE_INSTANCE="${SERVICE_HOSTNAME##*.}"
+        SERVICE_INSTANCE="$(echo "$(fqdn)" | awk -F'.' '{print $2}')"
     fi
     echo "$SERVICE_INSTANCE"
 }
@@ -82,6 +82,9 @@ function main(){
             ;;
         -i|--instance)
 	    echo "$(service_instance)"
+            ;;
+        -f|--fqdn)
+	    echo "$(fqdn)"
             ;;
         -h|--hostname)
 	    echo "$(service_hostname)"
