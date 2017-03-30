@@ -35,11 +35,10 @@ function node_address(){
 function fqdn(){
     while [[ -z "$FQDN" && $LOOP -lt 30 ]] ; do
         FQDN="$(nslookup "$(node_address)" "$(name_server)" | awk -F'= ' 'NR==5 { print $2 }')"
-        LEN=$(echo "$FQDN" | tr '.' ' ' | wc -w)
-        if [[ $LEN -ne 4 ]]; then
+        SERVICE_NAME="$(echo "$FQDN" | awk -F'.' '{print $1}')"
+        SERVICE_LOOKUP="$(getent hosts tasks.${SERVICE_NAME})"
+        if [[ -z "${SERVICE_LOOKUP}" ]]; then
             FQDN=""
-            LOOP=$((LOOP + 1))
-            sleep 1
         fi
     done
     echo "$FQDN"
