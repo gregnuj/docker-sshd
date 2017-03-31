@@ -10,6 +10,8 @@ declare NAME_SERVER="${NAME_SERVER:=""}"
 declare SERVICE_NAME="${SERVICE_NAME:=""}"
 declare SERVICE_HOSTNAME="${SERVICE_HOSTNAME:=""}"
 declare SERVICE_INSTANCE="${SERVICE_INSTANCE:=""}"
+declare SERVICE_MEMBERS="${SERVICE_MEMBERS:=""}"
+declare SERVICE_MINIMUM="${SERVICE_MINIMUM:="2"}"
 declare CONTAINER_NAME="${CONTAINER_NAME:=""}"
 declare NODE_ADDRESS="${NODE_ADDRESS:=""}"
 
@@ -72,6 +74,37 @@ function container_name(){
     fi
     echo "$CONTAINER_NAME"
 }
+
+function service_members(){
+    while [[ -z "$SERVICE_MEMBERS" ]]; do
+       SERVICE_NAME="$(service_name)"
+       NODE_ADDRESS="$(node_address)"
+       CURRENT_MEMBERS="$(getent hosts tasks.${SERVICE_NAME} | sort | awk -v ORS=',' '{print $1}')"
+       CURRENT_MEMBERS="${CURRENT_MEMBERS%%,}" # strip trailing commas
+       COUNT=$(echo "$CURRENT_MEMBERS" | tr ',' ' ' | wc -w)
+       echo "Found ($COUNT) members in ${SERVICE_NAME} ($CURRENT_MEMBERS)" >&2
+       if [[ $COUNT -lt $(($SERVICE_MINIMUM)) ]]; then
+           echo "Waiting for at least $SERVICE_MINIMUM IP addresses to resolve..." >&2
+           SLEEPS=$((SLEEPS + 1))
+           sleep 3
+       else
+           SERVICE_MEMBERS="$CURRENT_MEMBERS"
+       fi
+
+       # After 90 seconds reduce SERVICE_ADDRESS_MINIMUM
+       if [[ $SLEEPS -ge 30 ]]; then
+          SLEEPS=0
+          SERVICE_MINIMUM=$((SERVICE_MINIMUM - 1))
+          echo "Reducing SERVICE_MINIMUM to $SERVICE_MINIMUM" >&2
+       fi
+       if [[ $SERVICE_MINIMUM -lt 2 ]]; then
+          echo "SERVICE_MINIMUM is $SERVICE_MINIMUM cannot continue" >&2
+          exit 1
+       fi
+    done
+    echo $SERVICE_MEMBERS
+}
+
 
 function main(){
     case "$1" in
