@@ -5,13 +5,6 @@ if [[ ! -z "$DEBUG" && "$DEBUG" != 0 && "${DEBUG^^}" != "FALSE" ]]; then
   set -x
 fi
 
-declare FQDN="$(fqdn)"
-declare NODE_ADDRESS="$(node_address)"
-declare SERVICE_NAME="$(service_name)"
-declare SERVICE_HOSTNAME="$(service_hostname)"
-declare SERVICE_INSTANCE="$(service_instance)"
-declare CONTAINER_NAME="$(container_name)"
-
 function node_address(){
     while [[ -z "$NODE_ADDRESS" ]] ; do
         NODE_ADDRESS="$(hostname -i | awk '{print $1}')"
@@ -60,12 +53,13 @@ function container_name(){
 }
 
 function service_members(){
-    CURRENT_MEMBERS="$(getent hosts tasks.$(service_name) | sort | awk -v ORS=',' '{print $1}')"
-    echo "${CURRENT_MEMBERS%%,}" # strip trailing commas
+    SERVICE_MEMBERS="$(getent hosts tasks.$(service_name) | sort | awk -v ORS=',' '{print $1}')"
+    echo "${SERVICE_MEMBERS%%,}" # strip trailing commas
 }
 
 function service_count(){
-    COUNT=$(echo "$(service_members)" | tr ',' ' ' | wc -w)
+    SERVICE_COUNT=$(echo "$(service_members)" | tr ',' ' ' | wc -w)
+    echo $SERVICE_COUNT
 }
 
 function main(){
