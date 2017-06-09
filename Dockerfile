@@ -4,7 +4,9 @@ LABEL MAINTAINER="Greg Junge <gj8287@att.com>"
 ## Install project requirements
 RUN set -x \
     && apt-get update \
-    && apt-get install -y bash dnsutils nmap openssh-client openssh-server \
+    && apt-get install -y \
+    bash dnsutils nmap telnet \
+    socat openssh-client openssh-server \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir /var/run/sshd \
